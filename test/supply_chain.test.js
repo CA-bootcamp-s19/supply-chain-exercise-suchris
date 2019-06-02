@@ -52,7 +52,7 @@ contract('SupplyChain', function(accounts) {
         assert.equal(eventEmitted, true, 'adding an item should emit a For Sale event')
     })
 
-    it.only("should allow someone to purchase an item and update state accordingly", async() => {
+    it("should allow someone to purchase an item and update state accordingly", async() => {
 
         await instance.addItem(name, price, {from: alice})
         var aliceBalanceBefore = await web3.eth.getBalance(alice)
