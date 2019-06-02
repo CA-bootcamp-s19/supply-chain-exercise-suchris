@@ -1,6 +1,6 @@
 /*
     This exercise has been updated to use Solidity version 0.5
-    Breaking changes from 0.4 to 0.5 can be found here: 
+    Breaking changes from 0.4 to 0.5 can be found here:
     https://solidity.readthedocs.io/en/v0.5.0/050-breaking-changes.html
 */
 
@@ -120,9 +120,9 @@ contract SupplyChain {
     paidEnough(items[sku].price)
     checkValue(sku)
   {
-    items[sku].seller.transfer(msg.value);
     items[sku].buyer = msg.sender;
     items[sku].state = State.Sold;
+    items[sku].seller.transfer(msg.value);
     emit LogSold(sku);
   }
 
