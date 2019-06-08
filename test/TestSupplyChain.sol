@@ -8,14 +8,17 @@ import "./Tester.sol";
 contract TestSupplyChain {
     uint public initialBalance = 1 ether;  // start with initial balance
 
-    SupplyChain public supplyChain;        // creat SupplyChain contract to test
-    Tester public buyer;                   // create actor buyer to interactive with supplyChain
-    Tester public seller;                  // create actor seller to interactive with supplyChain
+    /// create the escrow supply chain contract
+    /// along with buyer and seller actors to
+    /// model test cases
+    SupplyChain supplyChain;
+    Tester buyer;
+    Tester seller;
 
-    uint public price;             // delcare variable item price
-    uint public excessAmount;      // declare variable excessAmount above item price
-    string public name;            // declare variable name of an item
-    uint public sku;               // declare variable sku of an item
+    uint price;             // item price
+    uint priceOffer;        // the funds to purchase item
+    string name;            // item name
+    uint sku;               // item sku
 
     // state of an item, this matches SupplyChain contract's State
     enum State {ForSale, Sold, Shipped, Received}
@@ -32,18 +35,16 @@ contract TestSupplyChain {
         seller = new Tester(supplyChain);       // instantiate seller
 
         price = 10;             // initialize price to 10
-        excessAmount = 2000;    // initialize excessAmount to 2000
+        priceOffer = 2000;      // initialize priceOffer to be above price
         name = "book";          // initialize name to "book"
         sku = 0;                // initialize sku to 0
 
         seller.addItem(name, price);            // add an item for sale
-        address(buyer).transfer(excessAmount);  // tansfer some funds to buyer
+        address(buyer).transfer(priceOffer);    // fund buyer for purchasing
     }
 
     // Test for failing conditions in this contracts
     // test that every modifier is working
-
-    // addItem
 
     /// @notice test adding an item for sale
     function testAddItem()
@@ -70,14 +71,11 @@ contract TestSupplyChain {
         Assert.equal(_seller, expectedSeller, "Item seller is the seller`");
     }
 
-    // buyItem
-
     /// @notice test for failure if user does not send enough funds
     function testBuyItemWithLessFund()
         public
     {
-        address expectedBuyer = address(buyer);
-        address expectedSeller = address(seller);
+        address expectedBuyer = address(0); // buyer is not assigned when item is for sale
 
         string memory _name;
         uint _sku;
@@ -91,13 +89,15 @@ contract TestSupplyChain {
 
         ( _name, _sku, _price, _state, _seller, _buyer) = supplyChain.fetchItem(sku);
         Assert.equal(_state, (uint)(State.ForSale), "Item State doesn't match `For sale`");
-        Assert.equal(_buyer, address(0), "Item buyer is not 0x");
+        Assert.equal(_buyer, expectedBuyer, "Item buyer is not 0x");
     }
 
     /// @notice test purchasing an item that is not for sale
-    function testBuyItemNotForSale() public {
-        address expectedBuyer = address(buyer);
-        address expectedSeller = address(seller);
+    function testBuyItemNotForSale()
+        public
+    {
+        address expectedBuyer = address(buyer);     // address of buyer
+        address expectedSeller = address(seller);   // address of seller
 
         string memory _name;
         uint _sku;
@@ -119,33 +119,38 @@ contract TestSupplyChain {
         Assert.equal(_seller, expectedSeller, "Seller is not the expected seller`");
     }
 
-    // shipItem
-
     /// @notice test shipping an item that is made by the seller
-    function testShipItemByNonSeller() public {
-        buyer.buyItem(sku, excessAmount);
+    function testShipItemByNonSeller()
+        public
+    {
+        buyer.buyItem(sku, priceOffer);
         bool result = buyer.shipItem(sku);
         Assert.isFalse(result, "Non seller can't ship an item");
     }
 
     /// @notice test shipping an item that is not marked sold
-    function testShipItemNotSold() public {
+    function testShipItemNotSold()
+        public
+    {
         bool result = seller.shipItem(sku);
         Assert.isFalse(result, "Can't ship an item that is not sold");
     }
 
-    // receiveItem
-
     /// @notice test receiving an item from an address that is not buyer
-    function testReceiveItemNonBuyer() public {
-        buyer.buyItem(sku, excessAmount);
+    function testReceiveItemNonBuyer()
+        public
+    {
+        buyer.buyItem(sku, priceOffer);
         seller.shipItem(sku);
         bool result = seller.receiveItem(sku);
         Assert.isFalse(result, "Non buyer can't receive the item");
     }
+    
     /// @notice test receivng an item that is not marked shipped
-    function testReceiveItemNotShipped() public {
-        buyer.buyItem(sku, excessAmount);
+    function testReceiveItemNotShipped()
+        public
+    {
+        buyer.buyItem(sku, priceOffer);
         bool result = buyer.receiveItem(sku);
         Assert.isFalse(result, "Can't receive an item that is not shipped");
     }
